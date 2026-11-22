@@ -1,0 +1,3 @@
+__pycache__/
+# Tracks originales de Wikiloc: se quedan en local (la página usa data/route.json)
+gpx/

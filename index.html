@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Expedición Caminos de Lengerke</title>
+<meta name="description" content="5 días de trekking por los caminos reales de Santander: cañón del Chicamocha, Barichara, Guane y Zapatoca. 59,7 km y +3.270 m.">
+<meta name="theme-color" content="#0e1013">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1013'/%3E%3Cpath d='M4 25 13 9l5 8 3-4 7 12z' fill='%23ff6a3d'/%3E%3C/svg%3E">
+
+<!-- Open Graph (vista previa en WhatsApp). Cambia TU-USUARIO/lengerke por la URL real de tu sitio. -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:title" content="Expedición Caminos de Lengerke">
+<meta property="og:description" content="5 días de trekking por Santander: Los Santos → Jordán → Barichara → Guane → Zapatoca. 59,7 km · +3.270 m.">
+<meta property="og:url" content="https://mipla10.github.io/lengerke/">
+<meta property="og:image" content="https://mipla10.github.io/lengerke/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Mapa y perfil de la Expedición Caminos de Lengerke">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0e1013; --surface: #161a1f; --surface-2: #1e232a; --line: #2a3038;
+    --ink: #f3f5f7; --muted: #9ba4af; --faint: #6b7480;
+    --accent: #ff6a3d;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  button { font: inherit; color: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Hero */
+  header { padding: 28px 0 8px; }
+  .kicker { margin: 0; color: var(--accent); font-weight: 700; font-size: 13px;
+    letter-spacing: .08em; text-transform: uppercase; }
+  h1 { font-size: clamp(32px, 8.5vw, 56px); line-height: 1.05; margin: 8px 0 10px;
+    letter-spacing: -.02em; font-weight: 800; }
+  .lede { margin: 0; color: var(--muted); max-width: 60ch; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0 4px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 14px; }
+  .tile b { display: block; font-size: 24px; line-height: 1.2; font-weight: 750; }
+  .tile span { color: var(--muted); font-size: 14px; }
+  .tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  @media (min-width: 760px) {
+    .summary { grid-template-columns: repeat(5, 1fr); }
+    .tile:last-child:nth-child(odd) { grid-column: auto; }
+  }
+
+  /* Tabs */
+  .tabs { position: sticky; top: 0; z-index: 5; background: rgba(14,16,19,.88);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    margin: 0 -16px; padding: 10px 16px; display: flex; gap: 8px; overflow-x: auto;
+    scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface);
+    border-radius: 999px; padding: 9px 16px; font-size: 15px; font-weight: 650;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; }
+  .tab i { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--ink)); }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* Map */
+  .mapwrap { position: relative; height: min(62vh, 580px); min-height: 360px;
+    border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+    background: #0b0d10; margin-top: 4px; }
+  #map { position: absolute; inset: 0; }
+  .map-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+    padding: 24px; text-align: center; font-size: 15px; }
+  .readout { position: absolute; top: 10px; left: 10px; z-index: 2; pointer-events: none;
+    background: rgba(14,16,19,.82); border: 1px solid var(--line); border-radius: 12px;
+    padding: 6px 10px; font-size: 14px; font-weight: 650; display: flex; gap: 8px; align-items: center; }
+  .readout[hidden] { display: none; }
+  .readout i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .controls { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2;
+    display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px;
+    background: rgba(14,16,19,.86); border: 1px solid var(--line); border-radius: 999px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .play { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%; border: 0;
+    background: var(--accent); color: #fff; display: grid; place-items: center; cursor: pointer; }
+  .play svg { width: 22px; height: 22px; }
+  .speed { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface-2);
+    border-radius: 999px; padding: 6px 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    min-width: 48px; min-height: 36px; }
+  input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); height: 32px; }
+  .maplibregl-ctrl-attrib { font-size: 11px; }
+  .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: 74px; }
+
+  /* Map markers */
+  .mk { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .mk .ic { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: #fff; color: #111; box-shadow: 0 2px 8px rgba(0,0,0,.5); border: 2px solid var(--c, #fff); }
+  .mk .ic svg { width: 17px; height: 17px; }
+  .mk.destacado .ic { background: var(--c); color: #111; border-color: #fff; }
+  .mk .lb { background: rgba(14,16,19,.85); color: #fff; font-size: 13px; font-weight: 700;
+    padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
+  .mk.left { flex-direction: row-reverse; }
+  .far .mk .lb { display: none; }
+  .far .mk.always .lb { display: block; }
+  .far .mk .ic { width: 22px; height: 22px; }
+  .far .mk .ic svg { width: 13px; height: 13px; }
+  .bus-tag { background: #d0d5dc; color: #111; font-size: 13px; font-weight: 800; padding: 3px 9px;
+    border-radius: 999px; display: flex; gap: 5px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .bus-tag svg { width: 15px; height: 15px; }
+  .head { width: 20px; height: 20px; border-radius: 50%; background: var(--c); border: 3px solid #fff;
+    box-shadow: 0 0 0 6px rgba(255,255,255,.18), 0 2px 10px rgba(0,0,0,.6); }
+  .probe { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--c);
+    box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  .maplibregl-popup-content { background: var(--surface); color: var(--ink); border-radius: 12px;
+    padding: 10px 14px; font-size: 14px; border: 1px solid var(--line); }
+  .maplibregl-popup-content b { font-size: 15px; }
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--surface); }
+  .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+  .maplibregl-popup-close-button { color: var(--muted); font-size: 18px; padding: 0 6px; }
+
+  /* Profile */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 14px 10px; margin-top: 12px; }
+  .panel-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .panel-h h2 { margin: 0; font-size: 16px; font-weight: 700; }
+  .panel-h span { color: var(--muted); font-size: 14px; }
+  #profile { position: relative; height: 150px; margin-top: 6px; touch-action: none; cursor: crosshair; }
+  #profile svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  #profile text { fill: var(--faint); font-size: 11px; }
+  #profile .pl { fill: var(--ink); font-size: 11px; font-weight: 700; }
+  .profile-empty { height: 100%; display: grid; place-items: center; color: var(--muted);
+    font-size: 15px; text-align: center; cursor: default; }
+
+  /* Card */
+  .card h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+  .chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .card p.sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; margin: 16px 0 6px; }
+  @media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat b { display: block; font-size: 21px; font-weight: 750; line-height: 1.2; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .stat small { display: block; color: var(--muted); font-size: 13px; }
+  .daylist { list-style: none; margin: 8px 0 0; padding: 0; }
+  .daylist li button { width: 100%; text-align: left; display: grid; grid-template-columns: 14px 1fr auto;
+    gap: 12px; align-items: center; background: none; border: 0; border-top: 1px solid var(--line);
+    padding: 12px 2px; cursor: pointer; }
+  .daylist li:first-child button { border-top: 0; }
+  .daylist i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+  .daylist b { display: block; font-size: 16px; }
+  .daylist span { color: var(--muted); font-size: 14px; }
+  .daylist em { font-style: normal; color: var(--muted); font-size: 14px; text-align: right; }
+
+  /* Tips */
+  section.tips h2 { font-size: 22px; margin: 32px 0 12px; }
+  .tiplist { display: grid; gap: 10px; }
+  @media (min-width: 640px) { .tiplist { grid-template-columns: 1fr 1fr; } }
+  .tip { display: flex; gap: 14px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px; }
+  .tip .ti { flex: 0 0 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--surface-2); color: var(--accent); }
+  .tip .ti svg { width: 22px; height: 22px; }
+  .tip b { display: block; }
+  .tip span { color: var(--muted); font-size: 15px; }
+
+  footer { color: var(--muted); font-size: 14px; padding: 24px 0 40px; margin-top: 32px;
+    border-top: 1px solid var(--line); }
+  footer p { margin: 6px 0; }
+  footer a { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Santander, Colombia · 5 días / 4 noches</p>
+    <h1>Expedición Caminos de Lengerke</h1>
+    <p class="lede">Caminos reales de piedra desde Los Santos hasta Zapatoca: bajada al fondo
+      del cañón del Chicamocha, Barichara, Guane y el cruce del río Suárez.</p>
+    <div class="summary" id="summary"></div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Días de la ruta"></nav>
+
+  <div class="mapwrap">
+    <div id="map" aria-label="Mapa 3D de la ruta"></div>
+    <div class="map-msg" id="mapmsg">Cargando mapa…</div>
+    <div class="readout num" id="readout" hidden></div>
+    <div class="controls">
+      <button class="play" id="play" aria-label="Reproducir recorrido"></button>
+      <input type="range" id="scrub" min="0" max="1000" value="1000" step="1" aria-label="Avance del recorrido">
+      <button class="speed num" id="speed" aria-label="Velocidad de la animación">1×</button>
+    </div>
+  </div>
+
+  <section class="panel" aria-label="Perfil de elevación">
+    <div class="panel-h"><h2>Perfil de elevación</h2><span class="num" id="probeinfo">Toca el perfil</span></div>
+    <div id="profile"></div>
+  </section>
+
+  <section class="panel card" id="card" aria-live="polite"></section>
+
+  <section class="tips">
+    <h2>Tips</h2>
+    <div class="tiplist" id="tips"></div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const MAPTILER_KEY = "PEGAR_AQUI";
+
+/* ---------- Utilidades ---------- */
+const $ = id => document.getElementById(id);
+const nf = (n, d = 0) => n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d });
+const km = n => nf(n, 1) + " km";
+const money = n => "$" + nf(n);
+const HAS_KEY = !!MAPTILER_KEY && MAPTILER_KEY !== "PEGAR_AQUI";
+const COLORS = { 1: "#ff6a3d", 2: "#ffc53d", 3: "#a78bfa", 4: "#4cc9f0", 5: "#d0d5dc" };
+const ICON = {
+  camping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 12 4l9 16H3Z"/><path d="m12 20-3-6h6l-3 6"/></svg>',
+  hotel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V6M3 15h18v4M21 15v-3a3 3 0 0 0-3-3h-7v6"/><circle cx="7" cy="11" r="2"/></svg>',
+  pueblo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l8-6 8 6v10"/><path d="M10 20v-6h4v6"/></svg>',
+  destacado: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>',
+  bus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  water: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z"/></svg>',
+  refill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z"/><path d="M12 7v6M9 10h6"/></svg>',
+  offline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>',
+};
+
+const TIPS = [
+  ["sun", "Calor en el cañón", "Salir de madrugada, sobre todo los días 1 y 4: el fondo del Chicamocha y el río Suárez se calientan mucho desde media mañana."],
+  ["water", "Mínimo 3 L de agua", "Por persona en cada día de caminata."],
+  ["refill", "Recargar agua en Jordán y Guane", "Son los puntos para llenar antes de las subidas largas."],
+  ["offline", "Tracks offline", "Descarga los tracks y el mapa en el celular antes de salir: en el cañón la señal es mala."],
+];
+
+/* ---------- Estado ---------- */
+let R, map, walk = [], total = 0;
+let G = 0;                 // km recorridos sobre el total caminado (línea de tiempo)
+let mode = "all";          // "all" o número de día
+let playing = false, speed = 1, lastT = 0, warmUntil = 0;
+let cam = null;            // cámara suavizada {lon, lat, bearing}
+let headMarker, probeMarker, drawnP = {};
+const BASE_KMS = 1.0;      // km de ruta por segundo a 1×
+const PITCH = 62, FOLLOW_ZOOM = 13.3;
+
+/* ---------- Geometría a lo largo de la ruta ---------- */
+function locate(g) {
+  g = Math.min(Math.max(g, 0), total);
+  for (const d of walk) if (g <= d.offset + d.distance_km + 1e-9) return { d, k: Math.max(0, g - d.offset) };
+  const d = walk[walk.length - 1];
+  return { d, k: d.distance_km };
+}
+function idxAt(arr, k, col) { // último índice con arr[i][col] <= k
+  let lo = 0, hi = arr.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (arr[m][col] <= k) lo = m; else hi = m - 1; }
+  return lo;
+}
+function pointAt(d, k) {
+  const t = d.track, i = idxAt(t, k, 2), j = Math.min(i + 1, t.length - 1);
+  const s = t[j][2] - t[i][2] || 1, f = Math.min(Math.max((k - t[i][2]) / s, 0), 1);
+  return [t[i][0] + f * (t[j][0] - t[i][0]), t[i][1] + f * (t[j][1] - t[i][1])];
+}
+function eleAt(d, k) {
+  const p = d.profile, i = idxAt(p, k, 0), j = Math.min(i + 1, p.length - 1);
+  const s = p[j][0] - p[i][0] || 1, f = Math.min(Math.max((k - p[i][0]) / s, 0), 1);
+  return p[i][1] + f * (p[j][1] - p[i][1]);
+}
+function bearingBetween(a, b) {
+  const r = Math.PI / 180, y = Math.sin((b[0] - a[0]) * r) * Math.cos(b[1] * r);
+  const x = Math.cos(a[1] * r) * Math.sin(b[1] * r) - Math.sin(a[1] * r) * Math.cos(b[1] * r) * Math.cos((b[0] - a[0]) * r);
+  return Math.atan2(y, x) / r;
+}
+const angDiff = (a, b) => ((b - a + 540) % 360) - 180;
+function boundsOf(coords) {
+  const b = new maplibregl.LngLatBounds(coords[0], coords[0]);
+  coords.forEach(c => b.extend(c));
+  return b;
+}
+const coordsOf = d => d.track.map(t => [t[0], t[1]]);
+
+/* ---------- Resumen, pestañas, tips, pie ---------- */
+function renderStatic() {
+  const s = R.summary;
+  $("summary").innerHTML = [
+    [km(s.walk_km), "caminando"],
+    ["+" + nf(s.gain_m) + " m", "desnivel positivo"],
+    [`${s.days} días`, `${s.nights} noches`],
+    [`${s.camping_nights} + ${s.hotel_nights}`, "noches camping + hotel"],
+    [money(s.lodging_cost), "alojamiento (hotel; camping por confirmar)"],
+  ].map(([b, t]) => `<div class="tile"><b class="num">${b}</b><span>${t}</span></div>`).join("");
+
+  $("tabs").innerHTML = `<button class="tab" role="tab" data-mode="all">Todo</button>` +
+    R.days.map(d => `<button class="tab" role="tab" data-mode="${d.day}" style="--c:${COLORS[d.day]}"><i></i>Día ${d.day}</button>`).join("");
+  $("tabs").addEventListener("click", e => {
+    const b = e.target.closest(".tab"); if (!b) return;
+    selectMode(b.dataset.mode === "all" ? "all" : +b.dataset.mode, true);
+  });
+
+  $("tips").innerHTML = TIPS.map(([i, t, s]) =>
+    `<div class="tip"><div class="ti">${ICON[i]}</div><div><b>${t}</b><span>${s}</span></div></div>`).join("");
+
+  const c = R.credits;
+  $("footer").innerHTML =
+    `<p>Tracks GPS de Wikiloc: ` + c.map(t =>
+      `“<a href="${t.track_url}" target="_blank" rel="noopener">${t.title}</a>” por <a href="${t.author_url}" target="_blank" rel="noopener">${t.author}</a>`).join(" y ") + `. ¡Gracias!</p>` +
+    `<p>Distancias y desniveles calculados de esos tracks (elevación suavizada, umbral de ${nf(R.method.hysteresis_m)} m). Tiempos aproximados.</p>` +
+    `<p>${HAS_KEY ? "Mapa: © MapTiler · © OpenStreetMap" : "Imágenes satelitales: Esri, Maxar, Earthstar Geographics · Relieve: Mapzen Terrain Tiles"} · MapLibre GL JS</p>`;
+}
+
+/* ---------- Tarjeta ---------- */
+function stat(v, label, small) {
+  return `<div class="stat"><b class="num">${v}</b><span>${label}</span>${small ? `<small>${small}</small>` : ""}</div>`;
+}
+function renderCard() {
+  const el = $("card");
+  if (mode === "all") {
+    el.innerHTML = `<span class="chip" style="--c:var(--ink)">Itinerario</span><h2>5 días por los caminos reales</h2>
+      <ul class="daylist">` + R.days.map(d => {
+        const meta = d.track ? `${km(d.distance_km)} · +${nf(d.gain_m)} m · ${d.time}`
+          : d.transport ? `Bus · ${nf(d.transport.distance_km)} km · ${d.time}` : "Descanso";
+        const n = d.night ? (d.night === "camping" ? "Camping" : "Hotel") : "—";
+        return `<li><button data-day="${d.day}" style="--c:${COLORS[d.day]}"><i></i>
+          <div><b>Día ${d.day} · ${d.title}</b><span class="num">${meta}</span></div><em>${n}</em></button></li>`;
+      }).join("") + `</ul>`;
+    el.querySelectorAll("button[data-day]").forEach(b => b.onclick = () => selectMode(+b.dataset.day, true));
+    return;
+  }
+  const d = R.days.find(x => x.day === mode);
+  const nt = d.night ? (d.night === "camping" ? "Camping" : "Hotel") : "—";
+  const np = d.night ? d.night_place : "regreso a casa";
+  const cost = d.night ? (d.cost ? money(d.cost) : "Por confirmar") : "—";
+  let stats;
+  if (d.track) {
+    stats = stat(km(d.distance_km), "distancia") + stat("+" + nf(d.gain_m) + " m", "D+") +
+      stat("−" + nf(d.loss_m) + " m", "D−") + stat(d.time, "tiempo estimado") +
+      stat(nf(d.max_ele_m) + " m", "altura máx") + stat(nf(d.min_ele_m) + " m", "altura mín") +
+      stat(nt, "noche", np) + stat(cost, "costo noche");
+  } else if (d.transport) {
+    stats = stat(nf(d.transport.distance_km) + " km", "en bus") + stat(d.time, "tiempo estimado") +
+      stat(nt, "noche", np) + stat(cost, "costo noche");
+  } else {
+    stats = stat("0 km", "sin caminata") + stat("—", "tiempo") + stat(nt, "noche", np) + stat(cost, "costo noche");
+  }
+  el.innerHTML = `<span class="chip" style="--c:${COLORS[d.day]}"><i></i>Día ${d.day}</span>
+    <h2>${d.title}</h2><p class="sub">${d.subtitle}</p><div class="stats">${stats}</div>`;
+}
+
+/* ---------- Perfil de elevación ---------- */
+let P = null; // escala actual del perfil
+function profileSegments() {
+  if (mode === "all") return walk.map(d => ({ d, off: d.offset }));
+  const d = walk.find(x => x.day === mode);
+  return d ? [{ d, off: 0 }] : [];
+}
+function renderProfile() {
+  const box = $("profile");
+  const segs = profileSegments();
+  if (!segs.length) {
+    const d = R.days.find(x => x.day === mode);
+    P = null;
+    box.innerHTML = `<div class="profile-empty">${d.transport
+      ? `Bus Zapatoca → Bucaramanga · ${nf(d.transport.distance_km)} km · ${d.time}`
+      : "Día de descanso en Barichara · sin trekking"}</div>`;
+    $("probeinfo").textContent = "";
+    return;
+  }
+  const W = box.clientWidth, H = box.clientHeight, pad = { l: 40, r: 8, t: 18, b: 20 };
+  const xmax = segs.reduce((a, s) => a + s.d.distance_km, 0);
+  const lo = Math.min(...segs.map(s => s.d.min_ele_m)), hi = Math.max(...segs.map(s => s.d.max_ele_m));
+  const y0 = Math.floor(lo / 250) * 250, y1 = Math.ceil(hi / 250) * 250;
+  const X = x => pad.l + x / xmax * (W - pad.l - pad.r);
+  const Y = y => pad.t + (1 - (y - y0) / (y1 - y0)) * (H - pad.t - pad.b);
+  P = { X, Y, xmax, pad, W, H, segs };
+  let g = "";
+  const ystep = (y1 - y0) > 1000 ? 500 : 250;
+  for (let y = y0; y <= y1; y += ystep)
+    g += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(y)}" y2="${Y(y)}" stroke="#2a3038"/>
+          <text x="${pad.l - 6}" y="${Y(y) + 4}" text-anchor="end">${nf(y)}</text>`;
+  const xstep = xmax > 40 ? 10 : xmax > 15 ? 5 : xmax > 6 ? 2 : 1;
+  for (let x = 0; x <= xmax + 1e-6; x += xstep)
+    g += `<text x="${X(x)}" y="${H - 4}" text-anchor="${x === 0 ? "start" : "middle"}">${x}${x ? " km" : ""}</text>`;
+  let defs = "", areas = "";
+  for (const { d, off } of segs) {
+    const c = COLORS[d.day];
+    const pts = d.profile.map(([k, e]) => `${X(off + k).toFixed(1)},${Y(e).toFixed(1)}`).join(" ");
+    defs += `<linearGradient id="pg${d.day}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".45"/><stop offset="1" stop-color="${c}" stop-opacity=".03"/></linearGradient>`;
+    areas += `<polygon points="${X(off)},${Y(y0)} ${pts} ${X(off + d.distance_km)},${Y(y0)}" fill="url(#pg${d.day})"/>
+              <polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/>`;
+    if (segs.length > 1 && off > 0)
+      g += `<line x1="${X(off)}" x2="${X(off)}" y1="${pad.t}" y2="${Y(y0)}" stroke="#3a414b" stroke-dasharray="3 3"/>`;
+  }
+  let labels = "";
+  for (const p of R.places) {
+    const s = segs.find(s => s.d.day === p.day); if (!s) continue;
+    if (segs.length > 1 && p.type !== "destacado") continue;
+    const x = X(s.off + p.km), y = Y(p.ele);
+    const anchor = x < pad.l + 40 ? "start" : x > W - 50 ? "end" : "middle";
+    labels += `<circle cx="${x}" cy="${y}" r="3.5" fill="#fff"/>
+               <text class="pl" x="${x}" y="${y - 8}" text-anchor="${anchor}" paint-order="stroke" stroke="#161a1f" stroke-width="4">${p.name}</text>`;
+  }
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Perfil de elevación">
+    <defs>${defs}</defs>${g}${areas}${labels}
+    <line id="pline" y1="${pad.t}" y2="${Y(y0)}" stroke="#fff" stroke-opacity=".6" visibility="hidden"/>
+    <circle id="phead" r="6" fill="#fff" stroke-width="3" visibility="hidden"/>
+  </svg>`;
+  updateProfileHead();
+}
+function updateProfileHead() {
+  if (!P) return;
+  const el = document.getElementById("phead"); if (!el) return;
+  const { d, k } = locate(G);
+  const s = P.segs.find(s => s.d.day === d.day);
+  const show = s && (playing || G < total - 1e-6);
+  el.setAttribute("visibility", show ? "visible" : "hidden");
+  if (!s) return;
+  el.setAttribute("cx", P.X(s.off + k)); el.setAttribute("cy", P.Y(eleAt(d, k)));
+  el.setAttribute("stroke", COLORS[d.day]);
+}
+function probeAt(clientX) {
+  if (!P) return;
+  const r = $("profile").getBoundingClientRect();
+  const x = Math.min(Math.max((clientX - r.left - P.pad.l) / (P.W - P.pad.l - P.pad.r), 0), 1) * P.xmax;
+  let seg = P.segs[P.segs.length - 1];
+  for (const s of P.segs) if (x <= s.off + s.d.distance_km) { seg = s; break; }
+  const k = Math.min(Math.max(x - seg.off, 0), seg.d.distance_km), e = eleAt(seg.d, k);
+  const line = document.getElementById("pline");
+  line.setAttribute("x1", P.X(seg.off + k)); line.setAttribute("x2", P.X(seg.off + k));
+  line.setAttribute("visibility", "visible");
+  $("probeinfo").textContent = `Día ${seg.d.day} · km ${nf(k, 1)} · ${nf(Math.round(e))} m`;
+  if (map && probeMarker) {
+    probeMarker.getElement().style.setProperty("--c", COLORS[seg.d.day]);
+    probeMarker.setLngLat(pointAt(seg.d, k)).addTo(map);
+  }
+}
+function bindProfile() {
+  const box = $("profile");
+  box.addEventListener("pointerdown", e => {
+    if (!P) return;
+    if (playing) setPlaying(false);
+    box.setPointerCapture(e.pointerId); probeAt(e.clientX);
+  });
+  box.addEventListener("pointermove", e => { if (e.pointerType === "mouse" || e.buttons) probeAt(e.clientX); });
+  box.addEventListener("pointerleave", e => {
+    if (e.pointerType !== "mouse" || !P) return;
+    const l = document.getElementById("pline"); if (l) l.setAttribute("visibility", "hidden");
+    if (probeMarker) probeMarker.remove();
+    $("probeinfo").textContent = "Toca el perfil";
+  });
+  let rt, lastW = innerWidth;
+  addEventListener("resize", () => {
+    if (innerWidth === lastW) return; // ignora la barra del navegador móvil
+    lastW = innerWidth; clearTimeout(rt); rt = setTimeout(renderProfile, 120);
+  });
+}
+
+/* ---------- Mapa ---------- */
+function mapStyle() {
+  // Con llave: satélite + relieve de MapTiler. Sin llave: alternativas gratuitas sin registro.
+  const sat = HAS_KEY
+    ? { type: "raster", url: `https://api.maptiler.com/tiles/satellite-v2/tiles.json?key=${MAPTILER_KEY}`, tileSize: 512 }
+    : { type: "raster", tileSize: 256, maxzoom: 18,
+        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        attribution: "Esri, Maxar, Earthstar Geographics" };
+  const dem = HAS_KEY
+    ? { type: "raster-dem", url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`, tileSize: 256 }
+    : { type: "raster-dem", encoding: "terrarium", tileSize: 256, maxzoom: 14,
+        tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+        attribution: "Mapzen Terrain Tiles" };
+  return {
+    version: 8,
+    sources: { sat, dem },
+    layers: [{ id: "sat", type: "raster", source: "sat" }],
+    terrain: { source: "dem", exaggeration: 1.5 },
+    sky: { "sky-color": "#1b2a3d", "horizon-color": "#5c6f86", "fog-color": "#8aa0b8",
+           "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 },
+  };
+}
+const CASING = "rgba(11,13,16,0.55)";
+const grad = (c, p) => ["step", ["line-progress"], c, p, "rgba(0,0,0,0)"];
+const lineFC = coords => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } });
+
+function initMap() {
+  try {
+    map = new maplibregl.Map({
+      container: "map", style: mapStyle(), center: [-73.2, 6.75], zoom: 9.5, pitch: 50,
+      maxPitch: 75, attributionControl: { compact: true }, cooperativeGestures: true,
+      locale: {
+        "CooperativeGesturesHandler.WindowsHelpText": "Usa Ctrl + rueda para hacer zoom",
+        "CooperativeGesturesHandler.MacHelpText": "Usa ⌘ + rueda para hacer zoom",
+        "CooperativeGesturesHandler.MobileHelpText": "Usa dos dedos para mover el mapa",
+      },
+    });
+  } catch (err) {
+    $("mapmsg").textContent = "Tu navegador no puede mostrar el mapa 3D. El perfil y los datos de cada día siguen disponibles abajo.";
+    console.warn(err);
+    return;
+  }
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  // Atribución compacta: MapLibre la expande sola al cargar datos; queda cerrada
+  // salvo que el usuario toque el botón (i).
+  let attribOpen = false;
+  const attribEl = () => map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+  const collapse = () => { const a = attribEl(); if (a && !attribOpen) a.classList.remove("maplibregl-compact-show"); };
+  map.on("sourcedata", collapse); map.on("styledata", collapse);
+  map.getContainer().addEventListener("click", e => {
+    if (e.target.closest(".maplibregl-ctrl-attrib-button"))
+      setTimeout(() => { attribOpen = attribEl().classList.contains("maplibregl-compact-show"); });
+  });
+  map.on("error", e => console.warn("map:", e.error && e.error.message));
+  map.on("load", () => {
+    $("mapmsg").remove();
+    const bus = R.days[4].transport.line;
+    map.addSource("bus", { type: "geojson", data: lineFC(bus) });
+    map.addLayer({ id: "bus-casing", type: "line", source: "bus",
+      paint: { "line-color": "#000", "line-width": 6, "line-opacity": .35 } });
+    map.addLayer({ id: "bus", type: "line", source: "bus",
+      paint: { "line-color": COLORS[5], "line-width": 3, "line-dasharray": [1.5, 1.5] } });
+    for (const d of walk) {
+      map.addSource(`full-${d.day}`, { type: "geojson", data: lineFC(coordsOf(d)), lineMetrics: true });
+      map.addLayer({ id: `full-${d.day}`, type: "line", source: `full-${d.day}`,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": COLORS[d.day], "line-width": 3, "line-opacity": .35 } });
+      // La parte recorrida se pinta con un degradado escalonado sobre line-progress:
+      // cambiar una propiedad de pintura es inmediato (setData por frame se rezaga).
+      map.addLayer({ id: `casing-${d.day}`, type: "line", source: `full-${d.day}`,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-width": 8, "line-gradient": grad(CASING, 0) } });
+      map.addLayer({ id: `draw-${d.day}`, type: "line", source: `full-${d.day}`,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-width": 4.5, "line-gradient": grad(COLORS[d.day], 0) } });
+    }
+    addMarkers(bus);
+    const he = document.createElement("div"); he.className = "head";
+    headMarker = new maplibregl.Marker({ element: he, opacityWhenCovered: "1" });
+    const pe = document.createElement("div"); pe.className = "probe";
+    probeMarker = new maplibregl.Marker({ element: pe, opacityWhenCovered: "1" });
+    drawTo(G);
+    fitOverview(0);
+    window.__mapReady = true;
+  });
+  const far = () => map.getContainer().classList.toggle("far", map.getZoom() < 11.2);
+  map.on("zoom", far); far();
+  for (const ev of ["dragstart", "rotatestart", "pitchstart"])
+    map.on(ev, e => { if (e.originalEvent && playing) setPlaying(false); });
+}
+
+function addMarkers(bus) {
+  const pts = [...R.places, { name: "Bucaramanga", type: "pueblo", day: 5, lon: R.bucaramanga[0], lat: R.bucaramanga[1], note: "Fin del viaje · bus desde Zapatoca" }];
+  for (const p of pts) {
+    const el = document.createElement("div");
+    const always = ["Los Santos", "Barichara", "Zapatoca", "Bucaramanga"].includes(p.name);
+    const left = ["Bucaramanga", "Jordán"].includes(p.name);
+    el.className = `mk ${p.type}${always ? " always" : ""}${left ? " left" : ""}`;
+    el.style.setProperty("--c", COLORS[p.day]);
+    el.innerHTML = `<span class="ic">${ICON[p.type]}</span><span class="lb">${p.name}</span>`;
+    const label = { camping: "Camping", hotel: "Hotel", pueblo: "Pueblo", destacado: "Punto destacado" }[p.type];
+    const popup = new maplibregl.Popup({ offset: 18, maxWidth: "240px" })
+      .setHTML(`<b>${p.name}</b><br><span style="color:var(--muted)">${label}${p.ele ? ` · ${nf(p.ele)} m` : ""}</span>${p.note ? `<br>${p.note}` : ""}`);
+    new maplibregl.Marker({ element: el, anchor: left ? "right" : "left", offset: [left ? 15 : -15, 0] }).setLngLat([p.lon, p.lat]).setPopup(popup).addTo(map);
+  }
+  const mid = [(bus[0][0] + bus[1][0]) / 2, (bus[0][1] + bus[1][1]) / 2];
+  const be = document.createElement("div"); be.className = "bus-tag"; be.innerHTML = ICON.bus + "bus";
+  new maplibregl.Marker({ element: be }).setLngLat(mid).addTo(map);
+}
+
+function drawTo(g) {
+  if (!map || !map.getLayer("draw-1")) return;
+  const { d: cur, k } = locate(g);
+  for (const d of walk) {
+    const p = d.offset + d.distance_km <= g + 1e-9 ? 1.01 : d.day !== cur.day ? 0 : k / d.distance_km;
+    if (drawnP[d.day] === p) continue;
+    map.setPaintProperty(`draw-${d.day}`, "line-gradient", grad(COLORS[d.day], p));
+    map.setPaintProperty(`casing-${d.day}`, "line-gradient", grad(CASING, p));
+    drawnP[d.day] = p;
+  }
+  const active = g < total - 1e-6 || playing;
+  if (active) {
+    headMarker.getElement().style.setProperty("--c", COLORS[cur.day]);
+    headMarker.setLngLat(pointAt(cur, k)).addTo(map);
+  } else headMarker.remove();
+  const ro = $("readout");
+  ro.hidden = !active;
+  ro.style.setProperty("--c", COLORS[cur.day]);
+  ro.innerHTML = `<i></i>Día ${cur.day} · km ${nf(k, 1)} · ${nf(Math.round(eleAt(cur, k)))} m`;
+}
+
+function followCamera(dt, instant) {
+  const { d, k } = locate(G);
+  const head = pointAt(d, k);
+  const target = k >= d.distance_km - 0.05 && cam ? cam.bearing
+    : bearingBetween(pointAt(d, Math.max(k - 0.3, 0)), pointAt(d, Math.min(k + 0.9, d.distance_km)));
+  if (!cam || instant) cam = { lon: head[0], lat: head[1], bearing: target };
+  else {
+    const a = 1 - Math.exp(-dt * 3.5), b = 1 - Math.exp(-dt * 0.9);
+    cam.lon += (head[0] - cam.lon) * a; cam.lat += (head[1] - cam.lat) * a;
+    cam.bearing += angDiff(cam.bearing, target) * b;
+  }
+  map.jumpTo({ center: [cam.lon, cam.lat], bearing: cam.bearing, pitch: PITCH, zoom: FOLLOW_ZOOM });
+}
+
+function fitOverview(duration = 1600) {
+  if (!map) return;
+  flyToBounds(walk.flatMap(coordsOf).concat([R.bucaramanga]), duration, 48, -15, 0.3);
+}
+function flyToBounds(coords, duration, pitch, bearing, zoomBoost = 0) {
+  const narrow = map.getContainer().clientWidth < 500;
+  const camOpts = map.cameraForBounds(boundsOf(coords), { padding: { top: 60, bottom: 90, left: 30, right: 50 }, bearing });
+  if (!camOpts) return;
+  map.flyTo({ center: camOpts.center, zoom: camOpts.zoom + zoomBoost - (narrow ? 0.15 : 0), bearing, pitch, duration, essential: true });
+}
+
+/* ---------- Animación ---------- */
+function setPlaying(on) {
+  playing = on;
+  $("play").innerHTML = on ? ICON.pause : ICON.play;
+  $("play").setAttribute("aria-label", on ? "Pausar recorrido" : "Reproducir recorrido");
+  if (on) {
+    if (G >= total - 1e-3) {
+      const d = typeof mode === "number" ? walk.find(x => x.day >= mode) : null;
+      G = d ? d.offset : 0;
+    }
+    if (mode !== "all" && mode !== locate(G).d.day) selectMode(locate(G).d.day, false);
+    if (map) {
+      const { d, k } = locate(G), head = pointAt(d, k);
+      const brg = bearingBetween(pointAt(d, Math.max(k - 0.3, 0)), pointAt(d, Math.min(k + 0.9, d.distance_km)));
+      map.flyTo({ center: head, zoom: FOLLOW_ZOOM, pitch: PITCH, bearing: brg, duration: 1800, essential: true });
+      cam = { lon: head[0], lat: head[1], bearing: brg };
+      warmUntil = performance.now() + 1850;
+    }
+    lastT = performance.now();
+    requestAnimationFrame(tick);
+  }
+  drawTo(G); updateProfileHead();
+}
+
+function tick(t) {
+  if (!playing) return;
+  const dt = Math.min((t - lastT) / 1000, 0.1); lastT = t;
+  if (t >= warmUntil) {
+    const before = locate(G).d.day;
+    G = Math.min(G + dt * BASE_KMS * speed, total);
+    const now = locate(G).d.day;
+    if (mode !== "all" && now !== before) selectMode(now, false);
+    if (map) followCamera(dt, false);
+  }
+  drawTo(G); updateProfileHead(); syncScrub();
+  if (G >= total) { finish(); return; }
+  requestAnimationFrame(tick);
+}
+
+function finish() {
+  G = total;
+  setPlaying(false);
+  syncScrub();
+  selectMode("all", false);
+  fitOverview(2500);
+  window.__animDone = (window.__animDone || 0) + 1;
+}
+
+function syncScrub() { $("scrub").value = Math.round(G / total * 1000); }
+
+function selectMode(m, fly) {
+  mode = m;
+  document.querySelectorAll(".tab").forEach(b =>
+    b.setAttribute("aria-selected", String(b.dataset.mode === String(m))));
+  const tabs = $("tabs"), active = tabs.querySelector('[aria-selected="true"]');
+  if (active) tabs.scrollTo({ left: active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
+  renderCard(); renderProfile();
+  $("probeinfo").textContent = P ? "Toca el perfil" : "";
+  if (probeMarker) probeMarker.remove();
+  if (!fly) return;
+  if (playing) setPlaying(false);
+  if (G < total) { G = total; drawTo(G); syncScrub(); updateProfileHead(); }
+  if (!map) return;
+  if (m === "all") return fitOverview();
+  const d = R.days.find(x => x.day === m);
+  if (d.track) flyToBounds(coordsOf(d), 1800, 58, bearingBetween(d.track[0], d.track[d.track.length - 1]));
+  else if (d.transport) flyToBounds(d.transport.line, 1800, 45, 0);
+  else {
+    const b = R.places.find(p => p.name === "Barichara");
+    map.flyTo({ center: [b.lon, b.lat], zoom: 14.5, pitch: 65, bearing: 30, duration: 1800, essential: true });
+  }
+}
+
+/* ---------- Arranque ---------- */
+function loadRoute() {
+  const viaFetch = location.protocol === "file:" ? Promise.reject(new Error("file://"))
+    : fetch("data/route.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  return viaFetch
+    .catch(() => new Promise((ok, fail) => {   // abierto con doble clic (file://)
+      const sc = document.createElement("script");
+      sc.src = "data/route.js";
+      sc.onload = () => window.ROUTE_DATA ? ok(window.ROUTE_DATA) : fail(new Error("route.js vacío"));
+      sc.onerror = fail;
+      document.head.appendChild(sc);
+    }));
+}
+loadRoute().then(data => {
+  R = data;
+  let off = 0;
+  walk = R.days.filter(d => d.track).map(d => { d.offset = off; off += d.distance_km; return d; });
+  total = off; G = total;
+  renderStatic();
+  selectMode("all", false);
+  bindProfile();
+  $("play").innerHTML = ICON.play;
+  $("play").onclick = () => setPlaying(!playing);
+  const speeds = [1, 2, 4];
+  $("speed").onclick = () => { speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length]; $("speed").textContent = speed + "×"; };
+  $("scrub").addEventListener("input", e => {
+    G = e.target.value / 1000 * total;
+    const { d } = locate(G);
+    if (mode !== "all" && mode !== d.day) selectMode(d.day, false);
+    drawTo(G); updateProfileHead();
+    if (map && map.getLayer("draw-1")) { followCamera(0, true); warmUntil = 0; }
+  });
+  if (window.maplibregl) initMap();
+  else $("mapmsg").textContent = "No se pudo cargar el mapa. Revisa tu conexión.";
+}).catch(err => {
+  console.error(err);
+  $("mapmsg").textContent = "No se pudieron cargar los datos de la ruta.";
+});
+</script>
+</body>
+</html>
