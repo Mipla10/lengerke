@@ -153,6 +153,7 @@
   .daylist i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
   .daylist b { display: block; font-size: 16px; }
   .daylist span { color: var(--muted); font-size: 14px; }
+  .daylist .nw { white-space: nowrap; font-size: inherit; color: inherit; }
   .daylist em { font-style: normal; color: var(--muted); font-size: 14px; text-align: right; }
 
   /* Tips */
@@ -326,8 +327,9 @@ function renderCard() {
   if (mode === "all") {
     el.innerHTML = `<span class="chip" style="--c:var(--ink)">Itinerario</span><h2>5 días por los caminos reales</h2>
       <ul class="daylist">` + R.days.map(d => {
-        const meta = d.track ? `${km(d.distance_km)} · +${nf(d.gain_m)} m · ${d.time}`
-          : d.transport ? `Bus · ${nf(d.transport.distance_km)} km · ${d.time}` : "Descanso";
+        const nw = t => `<span class="nw">${t}</span>`; // no partir "7–8 h" entre líneas
+        const meta = d.track ? [km(d.distance_km), `+${nf(d.gain_m)} m`, d.time].map(nw).join(" · ")
+          : d.transport ? ["Bus", `${nf(d.transport.distance_km)} km`, d.time].map(nw).join(" · ") : "Descanso";
         const n = d.night ? (d.night === "camping" ? "Camping" : "Hotel") : "—";
         return `<li><button data-day="${d.day}" style="--c:${COLORS[d.day]}"><i></i>
           <div><b>Día ${d.day} · ${d.title}</b><span class="num">${meta}</span></div><em>${n}</em></button></li>`;
